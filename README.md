@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 电工技术 · 三旋翼 PBL 智能教学平台
 
-## Getting Started
+上海工程技术大学《电工技术》课程模块化与三旋翼 PBL 智能体项目的网页原型。
 
-First, run the development server:
+## 运行
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev          # 开发模式，http://localhost:3100
+pnpm build && pnpm start   # 生产模式
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> 端口固定为 **3100**。请勿改用其他端口——教师端编辑的资源、题库、
+> 诊断记录、快测与作业数据都保存在浏览器本地存储中，而本地存储是按
+> 「地址 + 端口」隔离的，换端口会导致之前的数据看不到。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**最省事的启动方式**：直接双击项目根目录下的 `启动网页.command`，
+它会在终端里执行 `pnpm dev` 并提示访问地址。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 关闭服务
 
-## Learn More
+在运行中的终端窗口按 `Control + C`。
 
-To learn more about Next.js, take a look at the following resources:
+### 数据存在哪里
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+当前所有教师端的编辑（资源、题库）、诊断记录、课堂快测、预习任务、
+作业与补练记录都保存在**浏览器本地存储**里，不会上传到服务器。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- 换浏览器或清除浏览器数据会导致这些内容丢失
+- 换电脑、换端口同理
+- 接入数据库后，这些数据改为服务端保存
 
-## Deploy on Vercel
+## 目录
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+  content/course.ts        课程内容结构：8 章 / 节 / 知识点层级、模块划分、专业变体、课程关系图
+  content/resources/       44 节的四类资源（知识点标签 / 例题 / 易错点 / 案例）
+  content/questions/       题库：87 道单选 / 判断 / 计算题
+  components/app-state.tsx 全局状态：专业配置、当前专业、学习进度（浏览器本地存储）
+  components/site-nav.tsx  顶部导航与视角切换
+  components/agent-widget.tsx 学生端智能体悬浮窗
+  components/agent-panel.tsx  通用对话面板（学生端 / 教师端共用）
+  components/teacher-agent-widget.tsx 教师端教学助理悬浮窗
+  app/api/chat/route.ts    对话接口（服务端持有 API Key，流式转发）
+  app/api/teacher-chat/route.ts 教师端接口（注入学情摘要）
+  app/student/layout.tsx   学生端布局，挂载智能体悬浮窗
+  app/teacher/layout.tsx   教师端布局，挂载教学助理悬浮窗
+  app/page.tsx             首页
+  app/student/             学生端：课程地图、章节学习页
+  app/student/diagnostic/  基础诊断测评（组卷、答题、判分、掌握图谱）
+  app/student/profile/     我的学习状况
+  app/student/quiz/        课堂快测（输入课堂码答题）
+  app/student/resources/   分层资源推送（巩固 / 提升 / 拓展）
+  app/student/tasks/       预习导航（任务、目标、完成标记、提问）
+  app/student/homework/    作业作答、自动判分、错因分析与错题本
+  app/student/practice/    个性化补练与效果追踪
+  app/teacher/             教师端：专业变体配置、模块划分、建设进度
+  app/teacher/resources/   四类资源编辑
+  app/teacher/questions/   题库管理（含拍照上传）
+  app/teacher/diagnostics/ 诊断结果与学情
+  app/teacher/quiz/        发起课堂快测、实时统计、投屏讲评
+  app/teacher/push/        分层规则配置、覆盖统计、分层预览
+  app/teacher/tasks/       发布预习任务、一键生成导学单、查看学生疑问
+  app/teacher/homework/    布置作业、提交统计、错因分布、补练情况
+  lib/diagnostic.ts        抽题、判分与掌握度计算
+  lib/quiz.ts              课堂快测：会话、实时同步、选项分布统计
+  lib/push.ts              分层判定、知识点与资源匹配、覆盖统计
+  lib/task.ts              预习任务、完成度、导学单生成
+  lib/homework.ts          作业、自动判分、错因归因、补练生成
+  lib/agent.ts             助教系统提示词与常见问题
+  lib/knowledge.ts         课程知识库切分与关键词检索
+  lib/agent-log.ts         学生提问留痕
+  lib/teaching-digest.ts   学情摘要聚合
+  lib/llm.ts               大模型调用与流式转发（含降级）
+  app/courses/             课程关系图
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 当前已实现
+
+- 课程内容骨架（前言 + 第 1–8 章，含节与子目）
+- 五个模块的划分与三翼侧重标注
+- 专业变体配置：为每个专业勾选可见章节，支持快捷范围（前 4/5/6/7/8 章）
+- 学生端课程地图与章节学习页，含学习进度记录
+- 四类资源内容：44 节全部内置初始内容，教师端可编辑
+- 题库：87 道题（单选 47 / 判断 27 / 计算 13），覆盖 8 章
+- 教师端题库管理：增删改题目，支持手机拍照上传题目配图
+- 学生端章节页展示本节练习，可展开查看答案与解析
+- 基础诊断测评：选章节范围自动组卷、答题、自动判分、知识点掌握图谱、错题回顾
+- 学生端「我的学习状况」与教师端「诊断学情」视图
+- 课堂快测：一键发起课堂码、学生作答、实时统计、选项分布、投屏讲评
+- 分层资源推送：按掌握度分层匹配资源与练习，规则可在教师端配置
+- 预习导航：任务发布、目标设定、导学单生成、学生完成标记与疑问回收
+- 作业辅导：在线提交、自动判分、错因归因（知识性 / 方法性 / 粗心）、错题本
+- 个性化补练：按错题知识点生成练习并追踪正确率变化
+- 学生端智能体：右下角悬浮窗，流式对话，回答基于课程资料并标出来源
+- 教师端教学助理：归纳学生提问、定位易错点与薄弱知识点、找出错得最多的题、给出备课建议
+
+## 大模型配置
+
+学生端智能体需要配置一个大模型。在项目根目录的 `.env.local` 中填写：
+
+```
+LLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4/
+LLM_API_KEY=你的Key
+LLM_MODEL=glm-4.7-flash
+LLM_MODEL_FALLBACKS=glm-4.5-flash,glm-4-flash
+```
+
+- 当前使用智谱 GLM 的免费模型，`glm-4.7-flash` 免费且能力最好。
+- 免费模型高峰期可能返回 429，接口会自动降级到 `LLM_MODEL_FALLBACKS` 里的模型。
+- `.env.local` 已被 `.gitignore` 忽略，Key 不会进入代码库；前端也拿不到 Key。
+- 换成其他厂商只需改这三行（只要支持 OpenAI 兼容接口）。
+- 课程关系图（前置 / 后续 / 相关，节点链接可后续配置）
+
+## 待开发
+
+见教师端「建设进度」面板，对应申报书图 2 的教学全流程：诊断测评、
+任务与分层推送、小组讨论与课堂快测、作业与错题归因、实验复盘、个性化路径，
+以及学生端与教师端两个智能体。
+
+## 说明
+
+- 资源与题库内容内置了一版初始材料，需由任课教师复核后使用。
+- 教师端的修改目前保存在浏览器本地存储（localStorage），换设备不同步；后续接数据库时改为共享存储。
