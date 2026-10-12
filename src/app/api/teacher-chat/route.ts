@@ -5,6 +5,7 @@ import { streamChat } from "@/lib/llm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /**
  * 教师端智能体：学情数据存在浏览器本地，

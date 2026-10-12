@@ -5,6 +5,9 @@ import { streamChat } from "@/lib/llm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// 大模型回答通常是流式的，耗时可能超过 20 秒；
+// Vercel 默认的函数超时较短，这里显式放宽到 60 秒。
+export const maxDuration = 60;
 
 /** 学生端智能体：先检索课程资料，再交给模型回答 */
 export async function POST(req: NextRequest) {

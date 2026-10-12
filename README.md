@@ -111,6 +111,59 @@ LLM_MODEL_FALLBACKS=glm-4.5-flash,glm-4-flash
 - 免费模型高峰期可能返回 429，接口会自动降级到 `LLM_MODEL_FALLBACKS` 里的模型。
 - `.env.local` 已被 `.gitignore` 忽略，Key 不会进入代码库；前端也拿不到 Key。
 - 换成其他厂商只需改这三行（只要支持 OpenAI 兼容接口）。
+
+## 部署到 Vercel
+
+### 1. 推送到 GitHub
+
+```bash
+cd et-platform
+git remote add origin https://github.com/<你的用户名>/<仓库名>.git
+git push -u origin main
+```
+
+`.env.local` 不会上传（已被忽略），Key 需要单独在 Vercel 里配置。
+
+### 2. 在 Vercel 导入项目
+
+打开 vercel.com → Add New → Project → 选择该仓库。
+框架会被自动识别为 Next.js，构建命令和输出目录都不用改。
+
+### 3. 配置环境变量
+
+在项目的 Settings → Environment Variables 中添加：
+
+| 名称 | 值 |
+| --- | --- |
+| `LLM_BASE_URL` | `https://open.bigmodel.cn/api/paas/v4/` |
+| `LLM_API_KEY` | 你的智谱 API Key |
+| `LLM_MODEL` | `glm-4.7-flash` |
+| `LLM_MODEL_FALLBACKS` | `glm-4.5-flash,glm-4-flash` |
+
+添加后需要重新部署一次才会生效。
+
+### 4. 部署
+
+点击 Deploy，约一两分钟完成，会得到一个 `xxx.vercel.app` 的网址。
+
+## 部署后的重要限制
+
+本项目的数据（教师端编辑的资源与题库、诊断记录、课堂快测、预习任务、
+作业与补练）目前保存在**浏览器本地存储**中，没有服务端数据库。部署到
+Vercel 后依然如此，因此：
+
+- 每个浏览器看到的是自己那一份数据，设备之间互不共享；
+- 教师在电脑上改的内容，学生手机上不会出现；
+- 课堂快测的实时统计只在**同一台电脑的不同标签页**之间同步，
+  教师大屏和学生的手机之间不会互通。
+
+结论：适合演示、单人试用和功能验收；要让真实班级使用，需要先把数据层
+换成数据库（例如 Vercel Postgres / Neon / Supabase），再补上账号体系。
+
+## 本地开发端口
+
+本地请继续使用 `pnpm dev`（3100 端口）。换端口会导致浏览器本地存储对不上，
+之前编辑的内容看起来会「消失」——数据还在，只是按地址和端口隔离存放。
 - 课程关系图（前置 / 后续 / 相关，节点链接可后续配置）
 
 ## 待开发
