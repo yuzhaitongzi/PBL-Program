@@ -6,14 +6,21 @@ import { chapters } from "@/content/course";
 import { PROJECT_TEMPLATES } from "@/content/projects";
 import {
   DELIVERABLE_LABEL,
+  SCORE_LEVELS,
+  WING_INFO,
   formatDate,
+  makeDefaultRubric,
   projectFromTemplate,
   projectProgress,
+  scoredWings,
   uid,
   useProjectBoard,
   type Milestone,
   type Project,
+  type RubricCriterion,
+  type WingKey,
 } from "@/lib/project";
+import { WingRadar, type RadarSeries } from "@/components/wing-radar";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -34,12 +41,22 @@ export default function TeacherProjectsPage() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [saved, setSaved] = useState(false);
+  const [tScores, setTScores] = useState<Record<string, number>>({});
+  const [tComment, setTComment] = useState("");
 
   useEffect(() => {
     if (!selectedId && board.projects.length > 0) {
       setSelectedId(board.projects[0].id);
     }
   }, [board.projects, selectedId]);
+
+  useEffect(() => {
+    const t = board.evaluations.find(
+      (e) => e.projectId === selectedId && e.role === "teacher",
+    );
+    setTScores(t?.scores ?? {});
+    setTComment(t?.comment ?? "");
+  }, [selectedId, board.evaluations]);
 
   const project = board.projects.find((p) => p.id === selectedId) ?? null;
 
@@ -72,6 +89,13 @@ export default function TeacherProjectsPage() {
     setSelectedId(p.id);
   }
 
+  function updateCriterion(id: string, patch: Partial<RubricCriterion>) {
+    if (!project) return;
+    update({
+      rubric: project.rubric.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    });
+  }
+
   function addBlank() {
     const startAt = fromDateInput(startDate);
     const p: Project = {
@@ -83,6 +107,7 @@ export default function TeacherProjectsPage() {
       triWing: { design: "", engineering: "", management: "" },
       deliverable: "report",
       milestones: [],
+      rubric: makeDefaultRubric(),
       startAt,
       endAt: null,
       published: false,
@@ -458,6 +483,98 @@ export default function TeacherProjectsPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold text-slate-900">评价量规</h2>
+                <span className="text-xs text-slate-400">
+                  权重合计 {project.rubric.reduce((a, c) => a + c.weight, 0)}
+                  （建议 100）
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                按三翼设置评分点。学生自评与教师评分都会按这些权重汇总成三翼能力值。
+              </p>
+              <div className="mt-4 space-y-5">
+                {WING_INFO.map((w) => {
+                  const items = project.rubric.filter((c) => c.wing === w.key);
+                  return (
+                    <div key={w.key}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-medium text-slate-700">{w.name}</p>
+                        <span className="text-[11px] text-slate-400">{w.desc}</span>
+                        <button
+                          onClick={() =>
+                            update({
+                              rubric: [
+                                ...project.rubric,
+                                {
+                                  id: uid("rc"),
+                                  wing: w.key as WingKey,
+                                  name: "新评分点",
+                                  desc: "",
+                                  weight: 10,
+                                },
+                              ],
+                            })
+                          }
+                          className="ml-auto text-xs text-blue-600 hover:underline"
+                        >
+                          + 添加评分点
+                        </button>
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {items.map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2"
+                          >
+                            <input
+                              value={c.name}
+                              onChange={(e) =>
+                                updateCriterion(c.id, { name: e.target.value })
+                              }
+                              className="w-28 rounded-md border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-400"
+                            />
+                            <input
+                              value={c.desc}
+                              onChange={(e) =>
+                                updateCriterion(c.id, { desc: e.target.value })
+                              }
+                              className="min-w-48 flex-1 rounded-md border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-400"
+                            />
+                            <input
+                              type="number"
+                              min={0}
+                              value={c.weight}
+                              onChange={(e) =>
+                                updateCriterion(c.id, {
+                                  weight: Number(e.target.value) || 0,
+                                })
+                              }
+                              className="w-16 rounded-md border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-400"
+                            />
+                            <button
+                              onClick={() =>
+                                update({
+                                  rubric: project.rubric.filter((x) => x.id !== c.id),
+                                })
+                              }
+                              className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-500 transition hover:border-red-300 hover:text-red-600"
+                            >
+                              删除
+                            </button>
+                          </div>
+                        ))}
+                        {items.length === 0 ? (
+                          <p className="text-xs text-slate-400">暂无评分点</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
               <h2 className="text-sm font-semibold text-slate-900">学生进度与提交</h2>
               <p className="mt-1 text-xs text-slate-500">
                 当前为本机记录；接入数据库后此处将显示每个学生的进度。
@@ -532,6 +649,127 @@ export default function TeacherProjectsPage() {
                         ))}
                       </ul>
                     )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h2 className="text-sm font-semibold text-slate-900">评价</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                四档打分，系统按量规权重自动汇总成三翼能力值。
+              </p>
+              {(() => {
+                const selfEval = board.evaluations.find(
+                  (e) => e.projectId === project.id && e.role === "self",
+                );
+                const teacherEval = board.evaluations.find(
+                  (e) => e.projectId === project.id && e.role === "teacher",
+                );
+                const series: RadarSeries[] = [];
+                if (selfEval) {
+                  const s = scoredWings(selfEval.scores, project.rubric);
+                  series.push({
+                    name: `学生自评（${s.total}）`,
+                    color: "#3b82f6",
+                    values: [s.design, s.engineering, s.management],
+                  });
+                }
+                if (teacherEval) {
+                  const s = scoredWings(teacherEval.scores, project.rubric);
+                  series.push({
+                    name: `教师评分（${s.total}）`,
+                    color: "#0f172a",
+                    values: [s.design, s.engineering, s.management],
+                  });
+                }
+                return (
+                  <div className="mt-4 grid gap-6 lg:grid-cols-[300px_1fr]">
+                    <div className="rounded-xl bg-slate-50 p-4">
+                      {series.length === 0 ? (
+                        <p className="py-12 text-center text-xs text-slate-400">
+                          还没有评价数据
+                        </p>
+                      ) : (
+                        <WingRadar series={series} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-medium text-slate-600">教师评分</p>
+                        {teacherEval ? (
+                          <span className="text-[11px] text-slate-400">
+                            上次保存{" "}
+                            {new Date(teacherEval.evaluatedAt).toLocaleString("zh-CN")}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {project.rubric.map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex flex-wrap items-center gap-2"
+                          >
+                            <span className="w-36 shrink-0 text-xs text-slate-600">
+                              {c.name}
+                              <span className="ml-1 text-[10px] text-slate-400">
+                                {c.weight}
+                              </span>
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {SCORE_LEVELS.map((l) => (
+                                <button
+                                  key={l.label}
+                                  onClick={() =>
+                                    setTScores((s) => ({ ...s, [c.id]: l.value }))
+                                  }
+                                  className={`rounded-md px-2.5 py-1 text-[11px] ring-1 transition ${
+                                    tScores[c.id] === l.value
+                                      ? l.className
+                                      : "bg-white text-slate-500 ring-slate-200 hover:ring-slate-300"
+                                  }`}
+                                >
+                                  {l.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <textarea
+                        value={tComment}
+                        onChange={(e) => setTComment(e.target.value)}
+                        rows={3}
+                        placeholder="给学生的整体评语与改进建议"
+                        className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm leading-6 outline-none focus:border-blue-400"
+                      />
+                      <button
+                        onClick={() => {
+                          const existing = board.evaluations.find(
+                            (e) => e.projectId === project.id && e.role === "teacher",
+                          );
+                          const record = {
+                            id: existing?.id ?? uid("ev"),
+                            projectId: project.id,
+                            role: "teacher" as const,
+                            scores: tScores,
+                            comment: tComment,
+                            evaluatedAt: Date.now(),
+                          };
+                          mutate((b) => ({
+                            ...b,
+                            evaluations: existing
+                              ? b.evaluations.map((e) =>
+                                  e.id === existing.id ? record : e,
+                                )
+                              : [...b.evaluations, record],
+                          }));
+                        }}
+                        className="mt-3 rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+                      >
+                        保存教师评分
+                      </button>
+                    </div>
                   </div>
                 );
               })()}

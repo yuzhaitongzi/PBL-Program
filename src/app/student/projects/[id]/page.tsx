@@ -1,18 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { use, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { chapterById } from "@/content/course";
 import { readImageFiles } from "@/lib/image";
 import {
   DELIVERABLE_LABEL,
+  SCORE_LEVELS,
+  WING_INFO,
   formatDate,
   projectProgress,
+  scoredWings,
   uid,
   useProjectBoard,
   type MilestoneProgress,
   type ProjectSubmission,
 } from "@/lib/project";
+import { WingRadar, type RadarSeries } from "@/components/wing-radar";
 
 const WINGS = [
   { key: "design", name: "设计翼", desc: "问题识别与方案构想" },
@@ -36,8 +40,18 @@ export default function ProjectWorkbenchPage({
     images: [] as string[],
   });
   const fileRef = useRef<HTMLInputElement>(null);
+  const [selfScores, setSelfScores] = useState<Record<string, number>>({});
+  const [selfComment, setSelfComment] = useState("");
 
   const project = board.projects.find((p) => p.id === id);
+
+  useEffect(() => {
+    const e = board.evaluations.find(
+      (x) => x.projectId === id && x.role === "self",
+    );
+    setSelfScores(e?.scores ?? {});
+    setSelfComment(e?.comment ?? "");
+  }, [id, board.evaluations]);
 
   if (!project) {
     return (
@@ -459,6 +473,143 @@ export default function ProjectWorkbenchPage({
             </ul>
           </div>
         ) : null}
+      </section>
+
+      {/* 自评 */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 className="text-sm font-semibold text-slate-900">项目自评</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          对照量规给自己打分，系统会按权重汇总成三翼能力值。教师评分后可以对照看差距。
+        </p>
+        {(() => {
+          const selfEval = board.evaluations.find(
+            (e) => e.projectId === project.id && e.role === "self",
+          );
+          const teacherEval = board.evaluations.find(
+            (e) => e.projectId === project.id && e.role === "teacher",
+          );
+          const series: RadarSeries[] = [];
+          if (selfEval) {
+            const s = scoredWings(selfEval.scores, project.rubric);
+            series.push({
+              name: `我的自评（${s.total}）`,
+              color: "#3b82f6",
+              values: [s.design, s.engineering, s.management],
+            });
+          }
+          if (teacherEval) {
+            const s = scoredWings(teacherEval.scores, project.rubric);
+            series.push({
+              name: `教师评分（${s.total}）`,
+              color: "#0f172a",
+              values: [s.design, s.engineering, s.management],
+            });
+          }
+          return (
+            <div className="mt-4 grid gap-6 lg:grid-cols-[300px_1fr]">
+              <div className="rounded-xl bg-slate-50 p-4">
+                {series.length === 0 ? (
+                  <p className="py-12 text-center text-xs text-slate-400">
+                    打完分并保存后，这里会出现你的能力雷达图
+                  </p>
+                ) : (
+                  <>
+                    <WingRadar series={series} />
+                    <div className="mt-3 space-y-1">
+                      {WING_INFO.map((w) => {
+                        const idx = ["design", "engineering", "management"].indexOf(
+                          w.key,
+                        );
+                        const mine = series[0]?.values[idx] ?? 0;
+                        return (
+                          <p
+                            key={w.key}
+                            className="flex justify-between text-[11px] text-slate-500"
+                          >
+                            <span>{w.name}</span>
+                            <span>{mine}</span>
+                          </p>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div>
+                <div className="space-y-2">
+                  {project.rubric.map((c) => (
+                    <div key={c.id} className="flex flex-wrap items-center gap-2">
+                      <span className="w-40 shrink-0 text-xs text-slate-600">
+                        {c.name}
+                        <span className="ml-1 text-[10px] text-slate-400">
+                          {c.weight}
+                        </span>
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {SCORE_LEVELS.map((l) => (
+                          <button
+                            key={l.label}
+                            onClick={() =>
+                              setSelfScores((s) => ({ ...s, [c.id]: l.value }))
+                            }
+                            className={`rounded-md px-2.5 py-1 text-[11px] ring-1 transition ${
+                              selfScores[c.id] === l.value
+                                ? l.className
+                                : "bg-white text-slate-500 ring-slate-200 hover:ring-slate-300"
+                            }`}
+                          >
+                            {l.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {project.rubric.map((c) =>
+                  c.desc ? (
+                    <p key={`${c.id}-d`} className="mt-1 text-[11px] text-slate-400">
+                      {c.name}：{c.desc}
+                    </p>
+                  ) : null,
+                )}
+                <textarea
+                  value={selfComment}
+                  onChange={(e) => setSelfComment(e.target.value)}
+                  rows={3}
+                  placeholder="写下你对自己这次项目的总结"
+                  className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm leading-6 outline-none focus:border-blue-400"
+                />
+                <button
+                  onClick={() => {
+                    const existing = board.evaluations.find(
+                      (e) => e.projectId === project.id && e.role === "self",
+                    );
+                    const record = {
+                      id: existing?.id ?? uid("ev"),
+                      projectId: project.id,
+                      role: "self" as const,
+                      scores: selfScores,
+                      comment: selfComment,
+                      evaluatedAt: Date.now(),
+                    };
+                    mutate((b) => ({
+                      ...b,
+                      evaluations: existing
+                        ? b.evaluations.map((e) =>
+                            e.id === existing.id ? record : e,
+                          )
+                        : [...b.evaluations, record],
+                    }));
+                  }}
+                  className="mt-3 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                >
+                  保存自评
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </section>
     </div>
   );
