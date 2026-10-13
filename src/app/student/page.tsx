@@ -171,6 +171,19 @@ export default function StudentPage() {
             查看补练 →
           </p>
         </Link>
+        <Link
+          href="/student/projects"
+          className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-300 hover:shadow-sm"
+        >
+          <p className="text-xs font-medium text-blue-600">项目式学习</p>
+          <p className="mt-1 text-sm font-semibold text-slate-900">项目工坊</p>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            围绕真实问题的完整项目：按里程碑推进，记录探究与反思，提交作品。
+          </p>
+          <p className="mt-3 text-xs text-blue-600 group-hover:underline">
+            进入项目 →
+          </p>
+        </Link>
       </section>
 
       {modules.map((mod) => {

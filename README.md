@@ -55,6 +55,7 @@ src/
   app/student/tasks/       预习导航（任务、目标、完成标记、提问）
   app/student/homework/    作业作答、自动判分、错因分析与错题本
   app/student/practice/    个性化补练与效果追踪
+  app/student/projects/    项目工坊：项目列表与工作台（PBL）
   app/teacher/             教师端：专业变体配置、模块划分、建设进度
   app/teacher/resources/   四类资源编辑
   app/teacher/questions/   题库管理（含拍照上传）
@@ -63,11 +64,14 @@ src/
   app/teacher/push/        分层规则配置、覆盖统计、分层预览
   app/teacher/tasks/       发布预习任务、一键生成导学单、查看学生疑问
   app/teacher/homework/    布置作业、提交统计、错因分布、补练情况
+  app/teacher/projects/    项目工坊：从模板创建项目、里程碑与进度
   lib/diagnostic.ts        抽题、判分与掌握度计算
   lib/quiz.ts              课堂快测：会话、实时同步、选项分布统计
   lib/push.ts              分层判定、知识点与资源匹配、覆盖统计
   lib/task.ts              预习任务、完成度、导学单生成
   lib/homework.ts          作业、自动判分、错因归因、补练生成
+  lib/project.ts           项目工坊：项目、里程碑、进度、作品提交
+  content/projects.ts      5 个电工技术项目模板
   lib/agent.ts             助教系统提示词与常见问题
   lib/knowledge.ts         课程知识库切分与关键词检索
   lib/agent-log.ts         学生提问留痕
@@ -93,6 +97,7 @@ src/
 - 预习导航：任务发布、目标设定、导学单生成、学生完成标记与疑问回收
 - 作业辅导：在线提交、自动判分、错因归因（知识性 / 方法性 / 粗心）、错题本
 - 个性化补练：按错题知识点生成练习并追踪正确率变化
+- 项目工坊（PBL）：驱动性问题 + 里程碑 + 探究记录 + 反思日志 + 作品提交
 - 学生端智能体：右下角悬浮窗，流式对话，回答基于课程资料并标出来源
 - 教师端教学助理：归纳学生提问、定位易错点与薄弱知识点、找出错得最多的题、给出备课建议
 

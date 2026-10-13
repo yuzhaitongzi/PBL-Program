@@ -34,6 +34,12 @@ export default function TeacherPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
+              href="/teacher/projects"
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+            >
+              项目工坊
+            </Link>
+            <Link
               href="/teacher/homework"
               className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
             >
